@@ -70,3 +70,4 @@ credentials.json
 # uv
 .uv/
 uv.lock
+dump.rdb
