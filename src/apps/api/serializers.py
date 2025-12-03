@@ -3,7 +3,14 @@
 from rest_framework import serializers
 
 from apps.decision_engine.models import Decision, TradingSignal
-from apps.trading.models import Order, Position, Token
+from apps.trading.models import (
+    Order,
+    Position,
+    Token,
+    TokenHolder,
+    TokenHolderSnapshot,
+    TokenHolderSync,
+)
 
 
 class TokenSerializer(serializers.ModelSerializer):
@@ -11,7 +18,7 @@ class TokenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Token
-        fields = ["id", "address", "symbol", "name", "decimals"]
+        fields = ["id", "address", "chain_id", "symbol", "name", "decimals"]
 
 
 class PositionSerializer(serializers.ModelSerializer):
@@ -100,3 +107,67 @@ class DecisionSerializer(serializers.ModelSerializer):
             "rejection_reason",
             "created_at",
         ]
+
+
+class TokenHolderSerializer(serializers.ModelSerializer):
+    """Token holder serializer."""
+
+    token = TokenSerializer(read_only=True)
+    balance_formatted = serializers.DecimalField(
+        max_digits=36, decimal_places=18, read_only=True
+    )
+
+    class Meta:
+        model = TokenHolder
+        fields = [
+            "id",
+            "token",
+            "wallet_address",
+            "balance",
+            "balance_formatted",
+            "first_acquired",
+            "has_initiated_transfer",
+            "last_updated",
+            "created_at",
+        ]
+
+
+class TokenHolderSnapshotSerializer(serializers.ModelSerializer):
+    """Token holder snapshot serializer."""
+
+    class Meta:
+        model = TokenHolderSnapshot
+        fields = [
+            "id",
+            "wallet_address",
+            "balance",
+            "has_initiated_transfer",
+            "snapshot_at",
+        ]
+
+
+class TokenHolderSyncSerializer(serializers.ModelSerializer):
+    """Token holder sync state serializer."""
+
+    token = TokenSerializer(read_only=True)
+
+    class Meta:
+        model = TokenHolderSync
+        fields = [
+            "id",
+            "token",
+            "last_sync_at",
+            "total_holders",
+            "sync_in_progress",
+            "last_error",
+            "updated_at",
+        ]
+
+
+class TokenHolderBulkCreateSerializer(serializers.Serializer):
+    """Serializer for bulk creating/updating token holders."""
+
+    token_address = serializers.CharField(max_length=42)
+    chain_id = serializers.IntegerField()
+    holders = serializers.ListField(child=serializers.DictField())
+    next_offset = serializers.CharField(required=False, allow_null=True)
